@@ -1,14 +1,19 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from app.schemas.analytics import (
     ProductAnalytics,
     RegionAnalytics,
+    SQLQueryRequest,
+    SQLQueryResponse,
 )
 from app.services.analytics_service import (
     get_revenue_by_region,
     get_top_products,
 )
-
+from app.services.query_service import (
+    QueryExecutionError,
+    execute_safe_query,
+)
 
 router = APIRouter(
     prefix="/analytics",
@@ -53,3 +58,17 @@ def revenue_by_region():
         )
         for row in rows
     ]
+
+@router.post(
+    "/query",
+    response_model=SQLQueryResponse,
+)
+def execute_query(request: SQLQueryRequest):
+    try:
+        return execute_safe_query(request.sql)
+
+    except QueryExecutionError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc

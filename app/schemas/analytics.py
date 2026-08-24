@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from typing import Any
 
+from pydantic import BaseModel, Field
 
 
 class ProductAnalytics(BaseModel):
@@ -11,3 +12,16 @@ class ProductAnalytics(BaseModel):
 class RegionAnalytics(BaseModel):
     region: str
     revenue: float
+
+
+class SQLQueryRequest(BaseModel):
+    sql: str = Field(
+        min_length=1,
+        max_length=10000,
+    )
+
+
+class SQLQueryResponse(BaseModel):
+    columns: list[str]
+    rows: list[dict[str, Any]]
+    row_count: int

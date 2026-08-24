@@ -195,3 +195,5 @@ fastapi
 uvicorn[standard]
 pydantic
 duckdb
+sqlglot
+pytest
