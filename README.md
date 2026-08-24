@@ -25,3 +25,13 @@ databases using natural language.
 - Self-Correction Loop
 - Data visualization
 - AI-generated insights
+
+## Current Features
+
+- FastAPI backend
+- DuckDB analytics database
+- E-commerce sample dataset
+- Product sales analytics
+- Revenue by region analytics
+- Automatic API documentation with Swagger
+- Pydantic request/response validation
