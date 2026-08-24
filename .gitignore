@@ -9,7 +9,7 @@ __pycache__/
 # Environment variables
 .env
 .env.*
-
+*.duckdb
 # Database
 *.db
 *.sqlite
