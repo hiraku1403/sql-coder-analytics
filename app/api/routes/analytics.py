@@ -1,5 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query
 
+from app.services.schema_service import get_database_schema
+
+
 from app.schemas.analytics import (
     ProductAnalytics,
     RegionAnalytics,
@@ -72,3 +75,11 @@ def execute_query(request: SQLQueryRequest):
             status_code=400,
             detail=str(exc),
         ) from exc
+
+    
+@router.get("/schema")
+def database_schema():
+    return {
+        "database": "ecommerce",
+        "tables": get_database_schema(),
+    }

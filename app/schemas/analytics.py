@@ -25,3 +25,4 @@ class SQLQueryResponse(BaseModel):
     columns: list[str]
     rows: list[dict[str, Any]]
     row_count: int
+    execution_time_ms: float

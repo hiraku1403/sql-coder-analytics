@@ -35,3 +35,27 @@ databases using natural language.
 - Revenue by region analytics
 - Automatic API documentation with Swagger
 - Pydantic request/response validation
+
+## Backend Architecture
+
+The backend follows a layered architecture:
+
+- API layer
+- Service layer
+- Database layer
+- SQL validation layer
+
+The SQL execution engine only allows read-only SELECT queries
+and validates SQL statements before execution.
+
+## Security
+
+The query engine currently provides:
+
+- SELECT-only policy
+- Multiple statement protection
+- SQL syntax validation
+- Query length limits
+- Result row limits
+- Read-only execution
+- SQL parser-based validation
