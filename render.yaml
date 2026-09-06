@@ -1,0 +1,52 @@
+services:
+  # ============================================================
+  # BACKEND — FastAPI
+  # ============================================================
+
+  - type: web
+    name: sql-coder-api
+    runtime: python
+    plan: free
+    region: oregon
+
+    buildCommand: pip install -r requirements.txt
+
+    preDeployCommand: python -m app.database.seed
+
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    healthCheckPath: /health/
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.6
+
+      - key: LLM_PROVIDER
+        value: gemini
+
+      - key: GEMINI_API_KEY
+        sync: false
+
+      - key: DATABASE_PATH
+        value: data/ecommerce.duckdb
+
+
+  # ============================================================
+  # FRONTEND — Next.js
+  # ============================================================
+
+  - type: web
+    name: sql-coder-frontend
+    runtime: node
+    plan: free
+    region: oregon
+
+    rootDir: frontend
+
+    buildCommand: npm ci && npm run build
+
+    startCommand: npm start
+
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

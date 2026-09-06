@@ -1,22 +1,28 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 
-from app.services.schema_service import get_database_schema
-
-
-from app.schemas.analytics import (
-    ProductAnalytics,
-    RegionAnalytics,
-    SQLQueryRequest,
-    SQLQueryResponse,
+from app.ai.prompts import build_sql_prompt
+from app.schemas.ai import (
+    AnalyticsAskRequest,
+    AnalyticsAskResponse,
+    SQLExecutionRequest,
+    SQLGenerationRequest,
+    SQLGenerationResponse,
 )
-from app.services.analytics_service import (
-    get_revenue_by_region,
-    get_top_products,
+from app.services.ai_service import (
+    AnalyticsAgentError,
+    SQLGenerationError,
+    ask_analytics_agent,
+    generate_sql_from_question,
 )
 from app.services.query_service import (
     QueryExecutionError,
     execute_safe_query,
 )
+from app.services.schema_service import (
+    format_database_schema,
+    get_database_schema,
+)
+
 
 router = APIRouter(
     prefix="/analytics",
@@ -24,51 +30,73 @@ router = APIRouter(
 )
 
 
-@router.get(
-    "/top-products",
-    response_model=list[ProductAnalytics],
-)
-def top_products(
-    limit: int = Query(
-        default=10,
-        ge=1,
-        le=100,
-    ),
-):
-    rows = get_top_products(limit)
+@router.get("/schema")
+def database_schema():
+    """
+    Returns the current database schema.
+    """
 
-    return [
-        ProductAnalytics(
-            name=row[0],
-            total_sold=row[1],
-            revenue=float(row[2]),
-        )
-        for row in rows
-    ]
+    try:
+        schema = get_database_schema()
 
+        return {
+            "database": "ecommerce",
+            "tables": schema,
+        }
 
-@router.get(
-    "/revenue-by-region",
-    response_model=list[RegionAnalytics],
-)
-def revenue_by_region():
-    rows = get_revenue_by_region()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve database schema: {exc}",
+        ) from exc
 
-    return [
-        RegionAnalytics(
-            region=row[0],
-            revenue=float(row[1]),
-        )
-        for row in rows
-    ]
 
 @router.post(
-    "/query",
-    response_model=SQLQueryResponse,
+    "/generate-sql",
+    response_model=SQLGenerationResponse,
 )
-def execute_query(request: SQLQueryRequest):
+def generate_sql(
+    request: SQLGenerationRequest,
+):
+    """
+    Generates validated SQL from a natural language question.
+    """
+
     try:
-        return execute_safe_query(request.sql)
+        sql = generate_sql_from_question(
+            request.question
+        )
+
+        return {
+            "question": request.question,
+            "sql": sql,
+        }
+
+    except SQLGenerationError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate SQL: {exc}",
+        ) from exc
+
+
+@router.post("/query")
+def execute_query(
+    request: SQLExecutionRequest,
+):
+    """
+    Executes a validated SQL query.
+    """
+
+    try:
+        return execute_safe_query(
+            request.sql
+        )
 
     except QueryExecutionError as exc:
         raise HTTPException(
@@ -76,10 +104,48 @@ def execute_query(request: SQLQueryRequest):
             detail=str(exc),
         ) from exc
 
-    
-@router.get("/schema")
-def database_schema():
-    return {
-        "database": "ecommerce",
-        "tables": get_database_schema(),
-    }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected query error: {exc}",
+        ) from exc
+
+
+@router.post(
+    "/ask",
+    response_model=AnalyticsAskResponse,
+)
+def ask_analytics(
+    request: AnalyticsAskRequest,
+):
+    """
+    Ask a natural language analytics question.
+
+    The agent generates SQL, validates it and
+    executes it against DuckDB.
+    """
+
+    try:
+        result = ask_analytics_agent(
+            request.question
+        )
+
+        return result
+
+    except SQLGenerationError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
+    except AnalyticsAgentError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc),
+        ) from exc
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected agent error: {exc}",
+        ) from exc
