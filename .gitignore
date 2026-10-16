@@ -7,6 +7,7 @@ __pycache__/
 .venv/
 
 # Environment variables
+.env.example
 .env
 .env.*
 *.duckdb
