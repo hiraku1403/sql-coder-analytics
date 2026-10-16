@@ -40,12 +40,12 @@ def _get_allowed_origins() -> list[str]:
 
     Example:
 
-        ALLOWED_ORIGINS=https://my-frontend.onrender.com
+        ALLOWED_ORIGINS=https://sql-coder-frontend.onrender.com/
     """
 
     local_origins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
+        "https://sql-coder-frontend.onrender.com/",
+        "https://sql-coder-frontend.onrender.com/",
     ]
 
     configured_origins = os.getenv(

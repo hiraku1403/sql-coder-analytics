@@ -59,7 +59,7 @@ type HistoryItem = {
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "http://127.0.0.1:8000";
+  "https://sql-coder-api.onrender.com";
 
 const SUGGESTIONS = [
   "Quais foram os 3 produtos mais vendidos?",
