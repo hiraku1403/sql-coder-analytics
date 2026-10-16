@@ -1,17 +1,15 @@
+
 services:
   # ============================================================
   # BACKEND — FastAPI
   # ============================================================
-
   - type: web
     name: sql-coder-api
     runtime: python
     plan: free
     region: oregon
 
-    buildCommand: pip install -r requirements.txt
-
-    preDeployCommand: python -m app.database.seed
+    buildCommand: pip install -r requirements.txt && python -m app.database.seed
 
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
@@ -30,11 +28,9 @@ services:
       - key: DATABASE_PATH
         value: data/ecommerce.duckdb
 
-
   # ============================================================
   # FRONTEND — Next.js
   # ============================================================
-
   - type: web
     name: sql-coder-frontend
     runtime: node
