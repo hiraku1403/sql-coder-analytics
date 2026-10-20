@@ -1,450 +1,215 @@
 # SQL-Coder & Analytics Agent
 
-AI-powered analytics platform that transforms natural language questions into SQL queries, executes them safely against a relational analytics database, generates business insights, and recommends data visualizations.
+**An AI-powered analytics platform that turns natural-language questions into validated SQL, executes them against an analytics database, and presents results with business insights and charts.**
 
-The project combines **FastAPI, DuckDB, Gemini, SQLGlot, Pydantic and Next.js** into a complete Text-to-SQL analytics workflow.
+[Live Demo](https://sql-coder-frontend.onrender.com/) · [API Documentation](https://sql-coder-api.onrender.com/docs) · [GitHub Repository](https://github.com/hiraku1403/sql-coder-analytics)
 
 ---
 
 ## Overview
 
-SQL-Coder & Analytics Agent allows users to interact with an e-commerce analytics database using natural language.
+SQL-Coder & Analytics Agent makes e-commerce data accessible to people who may not know SQL. Ask a question in plain language; the application generates a query, validates it, executes it against DuckDB, and returns the result with an AI-generated explanation and visualization when appropriate.
 
-Instead of manually writing SQL, the user can ask questions such as:
+Example questions:
+- Which products sold the most?
+- Which region generated the highest revenue?
+- What are the top-selling products?
+- Show the products and their sales.
 
-> "Quais são os produtos mais vendidos?"
+This project demonstrates an end-to-end full-stack workflow combining an LLM, SQL validation, database access, API design, automated tests, and a deployed web interface.
 
-or:
+## Live application
 
-> "Qual região possui o maior faturamento?"
+- **Frontend:** https://sql-coder-frontend.onrender.com/
+- **Backend API:** https://sql-coder-api.onrender.com/
+- **Swagger UI:** https://sql-coder-api.onrender.com/docs
+- **ReDoc:** https://sql-coder-api.onrender.com/redoc
 
-The system processes the question through an AI-powered pipeline:
+> The application uses a sample e-commerce dataset. On a free hosting tier, the service may take a little while to wake up after inactivity.
+
+## How it works
 
 ```text
-Natural Language Question
-          │
-          ▼
-    Schema Discovery
-          │
-          ▼
-     SQL Generation
-          │
-          ▼
-     SQL Validation
-          │
-          ▼
-   Safe SQL Execution
-          │
-          ▼
-   Self-Correction Loop
-          │
-          ▼
- Business Data Analysis
-          │
-          ▼
- Visualization Planning
-          │
-          ▼
-      Final Result
+Natural-language question
+          |
+          v
+   Database schema discovery
+          |
+          v
+      SQL generation <----> Gemini
+          |
+          v
+      SQL validation
+          |
+          v
+   Read-only query execution
+          |
+          +---- On error ----> AI-assisted correction
+          |                         |
+          +<------------------------+
+          |
+          v
+      Business analysis
+          |
+          v
+   Visualization planning
+          |
+          v
+ Dashboard: KPIs, chart, data, SQL
 ```
-
----
 
 ## Features
 
-### Natural Language → SQL
+### Natural language to SQL
+- Ask analytical questions without writing SQL manually.
+- Use database schema context to guide SQL generation.
 
-Users can ask analytical questions without knowing SQL.
+### SQL validation and safer execution
+- Validate generated SQL before execution.
+- Restrict execution to read-only analytical queries.
+- Protect against multiple statements.
+- Enforce query-length and result-row limits.
+- Parse SQL before it reaches the database.
 
-The Gemini model generates SQL based on the database schema and the user's question.
+These controls reduce risk but do not, by themselves, make an AI-generated query system production-ready.
 
-### SQL Validation
+### AI-assisted self-correction
+When a generated query fails, the application can pass the error through a bounded correction flow and retry with corrected SQL.
 
-Generated SQL is validated before execution.
+### Business-oriented analysis
+Receive a concise summary and key insights based on the query results.
 
-The query engine enforces a read-only policy and protects the database from unsafe operations.
+### Data visualization
+The backend prepares a visualization plan, and the frontend renders suitable results using Recharts.
 
-Current protections include:
+### Analytics dashboard
+- Suggested questions and loading/error states
+- KPI cards
+- AI-generated summary and insights
+- Responsive chart visualization
+- Tabular data explorer
+- Generated SQL viewer
+- Execution metadata
+- Recent query history stored in the browser
 
-* SELECT-only queries
-* Multiple statement protection
-* SQL syntax validation
-* Query length limits
-* Result row limits
-* Read-only execution
-* SQL parser-based validation
-
-### Self-Correction
-
-If the generated SQL fails during execution, the system sends the error back to the LLM and requests a corrected query.
-
-The current agent supports a limited correction loop to avoid uncontrolled execution attempts.
-
-```text
-Generated SQL
-     │
-     ▼
-  Execute
-     │
- ┌───┴────┐
- │        │
-Success   Error
- │        │
- ▼        ▼
-Result   Correction
-          │
-          ▼
-       New SQL
-```
-
-### Business Analysis
-
-After obtaining the query results, the AI generates a business-oriented analysis containing:
-
-* Summary
-* Key insights
-* Data interpretation
-
-### Visualization Planning
-
-The system analyzes the returned dataset and generates a visualization plan based on the available columns and values.
-
-Supported chart planning includes analytical chart types such as:
-
-* Bar charts
-* Line charts
-* Other compatible visualization structures
-
-### Interactive Frontend
-
-The project includes a modern Next.js interface with:
-
-* Natural language query input
-* Suggested questions
-* Loading states
-* Error handling
-* KPI cards
-* AI-generated analysis
-* Data visualization
-* Data explorer
-* Generated SQL viewer
-* Execution metadata
-* Query history
-* Responsive layout
-
----
-
-# Architecture
+## Architecture
 
 ```text
-┌──────────────────────────────────────────────┐
-│                  Next.js                     │
-│                 Frontend                     │
-│                                              │
-│  Query Input → Results → Charts → Data      │
-└──────────────────────┬───────────────────────┘
-                       │
-                       │ HTTP / REST
-                       ▼
-┌──────────────────────────────────────────────┐
-│                  FastAPI                     │
-│                   API                        │
-│                                              │
-│  Analytics │ Database │ Health              │
-└──────────────────────┬───────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────┐
-│             Analytics Services               │
-│                                              │
-│ SQL Generation                               │
-│ SQL Validation                               │
-│ Query Execution                              │
-│ Self-Correction                              │
-│ Analysis                                     │
-│ Visualization Planning                      │
-└──────────────┬───────────────────┬───────────┘
-               │                   │
-               ▼                   ▼
-        ┌─────────────┐     ┌─────────────┐
-        │   Gemini    │     │   DuckDB    │
-        │     LLM     │     │  Analytics  │
-        └─────────────┘     └─────────────┘
+┌─────────────────────────────┐
+│       Next.js Frontend      │
+│  Question · KPIs · Charts   │
+│  Data Explorer · SQL Viewer │
+└──────────────┬──────────────┘
+               │ HTTP / REST
+               v
+┌─────────────────────────────┐
+│           FastAPI           │
+│ Analytics · Database · Health│
+└──────────────┬──────────────┘
+               v
+┌─────────────────────────────┐
+│      Analytics Services     │
+│ SQL generation and validation│
+│ Execution and self-correction│
+│ Analysis and chart planning │
+└───────────┬─────────┬───────┘
+            v         v
+          Gemini    DuckDB
 ```
 
----
+## Tech stack
 
-# Tech Stack
+| Area | Technologies |
+|---|---|
+| Backend | Python, FastAPI, Uvicorn, Pydantic |
+| AI | Google Gemini API |
+| Data and SQL | DuckDB, SQLGlot |
+| Frontend | Next.js, React, TypeScript |
+| Charts and styling | Recharts, Tailwind CSS |
+| Testing | pytest |
+| Deployment | Render |
+| Version control | Git, GitHub |
 
-## Backend
-
-* Python
-* FastAPI
-* Uvicorn
-* Pydantic
-* DuckDB
-* SQLGlot
-* Plotly
-* Google Gemini API
-* python-dotenv
-
-## Frontend
-
-* Next.js
-* React
-* TypeScript
-* Recharts
-* Tailwind CSS
-
-## Infrastructure
-
-* GitHub
-* Render
-* REST API
-
----
-
-# Project Structure
+## Project structure
 
 ```text
 sql-coder-analytics/
-│
 ├── app/
 │   ├── ai/
-│   │   ├── factory.py
-│   │   ├── llm.py
-│   │   ├── prompts.py
 │   │   └── providers/
-│   │       └── gemini_provider.py
-│   │
 │   ├── api/
 │   │   └── routes/
-│   │       ├── analytics.py
-│   │       ├── database.py
-│   │       └── health.py
-│   │
 │   ├── core/
-│   │   ├── config.py
-│   │   └── security.py
-│   │
 │   ├── database/
-│   │   ├── connection.py
-│   │   ├── models.py
-│   │   └── seed.py
-│   │
 │   ├── schemas/
-│   │   ├── ai.py
-│   │   ├── analysis.py
-│   │   └── chart.py
-│   │
 │   ├── services/
-│   │   ├── ai_service.py
-│   │   ├── analysis_service.py
-│   │   ├── chart_service.py
-│   │   ├── query_executor.py
-│   │   ├── schema_service.py
-│   │   ├── sql_validator.py
-│   │   └── visualization_service.py
-│   │
 │   └── main.py
-│
 ├── data/
-│   └── ecommerce.duckdb
-│
 ├── frontend/
 │   ├── app/
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   │
 │   ├── public/
 │   ├── package.json
-│   ├── package-lock.json
-│   ├── next.config.ts
-│   ├── postcss.config.mjs
 │   └── ...
-│
 ├── tests/
-│
 ├── .env.example
-├── .gitignore
-├── pyproject.toml
 ├── render.yaml
 ├── requirements.txt
 └── README.md
 ```
 
----
+## API endpoints
 
-# Database
+Explore the interactive API documentation at [Swagger UI](https://sql-coder-api.onrender.com/docs).
 
-The project uses DuckDB as the analytics database.
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/health/` | Check API health |
+| `GET` | `/analytics/schema` | Inspect the analytics schema |
+| `POST` | `/analytics/generate-sql` | Generate SQL from a question |
+| `POST` | `/analytics/query` | Execute a validated analytical query |
+| `POST` | `/analytics/ask` | Run the complete analytics workflow |
+| `GET` | `/database/schema` | Retrieve database schema information |
+| `GET` | `/database/schema/formatted` | Retrieve formatted schema information |
+| `GET` | `/database/status` | Check database status |
 
-The included sample dataset represents an e-commerce environment containing entities such as:
+Example request to `POST /analytics/ask`:
 
-* Customers
-* Products
-* Orders
-* Order items
-* Regions
-* States
+```json
+{
+  "question": "Qual produto vendeu mais?"
+}
+```
 
-The seed process generates the sample data deterministically using a fixed random seed.
+The response includes the question, generated SQL, returned data, analysis, and visualization information when available.
 
-To recreate the database locally:
+## Run locally
+
+### Requirements
+- Python
+- Node.js and npm
+- A Google Gemini API key
+
+### 1. Clone the repository
 
 ```bash
-python -m app.database.seed
+git clone https://github.com/hiraku1403/sql-coder-analytics.git
+cd sql-coder-analytics
 ```
 
-The default database location is:
+### 2. Set up the backend
 
-```text
-data/ecommerce.duckdb
+Create and activate a virtual environment.
+
+**Windows PowerShell:**
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-The location can also be configured through:
-
-```env
-DATABASE_PATH=data/ecommerce.duckdb
-```
-
----
-
-# API
-
-The FastAPI backend exposes the following main routes.
-
-## Health
-
-```http
-GET /health/
-```
-
-Used to verify that the API is running.
-
----
-
-## Analytics Schema
-
-```http
-GET /analytics/schema
-```
-
-Returns information about the analytics database schema.
-
----
-
-## Generate SQL
-
-```http
-POST /analytics/generate-sql
-```
-
-Generates SQL from a natural language question.
-
-Example request:
-
-```json
-{
-  "question": "Quais são os produtos mais vendidos?"
-}
-```
-
----
-
-## Execute Query
-
-```http
-POST /analytics/query
-```
-
-Executes a validated analytical SQL query.
-
----
-
-## Complete Analytics Agent
-
-```http
-POST /analytics/ask
-```
-
-Runs the complete pipeline:
-
-```text
-Question
-→ SQL
-→ Validation
-→ Execution
-→ Self-Correction
-→ Analysis
-→ Visualization
-```
-
-Example:
-
-```json
-{
-  "question": "Qual região possui o maior faturamento?"
-}
-```
-
----
-
-## Database Schema
-
-```http
-GET /database/schema
-```
-
-Returns the database schema.
-
-### Formatted Schema
-
-```http
-GET /database/schema/formatted
-```
-
-### Database Status
-
-```http
-GET /database/status
-```
-
----
-
-# API Documentation
-
-When running locally, FastAPI automatically provides interactive documentation.
-
-Swagger UI:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-ReDoc:
-
-```text
-http://127.0.0.1:8000/redoc
-```
-
----
-
-# Local Development
-
-## Backend
-
-Create and activate a virtual environment:
-
+**macOS / Linux:**
 ```bash
 python -m venv .venv
-```
-
-Windows PowerShell:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
+source .venv/bin/activate
 ```
 
 Install dependencies:
@@ -453,13 +218,7 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Create the environment file:
-
-```text
-.env
-```
-
-Configure:
+Create a `.env` file in the repository root based on `.env.example`:
 
 ```env
 LLM_PROVIDER=gemini
@@ -467,265 +226,113 @@ GEMINI_API_KEY=your_gemini_api_key
 DATABASE_PATH=data/ecommerce.duckdb
 ```
 
-Initialize the database:
+Keep your actual API key private. Never commit `.env` or real credentials.
+
+Initialize the sample database:
 
 ```bash
 python -m app.database.seed
 ```
 
-Start the API:
+Start the API from the repository root:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The API will be available at:
+The backend is available at `http://127.0.0.1:8000`; interactive docs are at `http://127.0.0.1:8000/docs`.
 
-```text
-http://127.0.0.1:8000
-```
+### 3. Set up the frontend
 
----
-
-# Frontend
-
-Navigate to the frontend:
+Open a second terminal:
 
 ```bash
 cd frontend
-```
-
-Install dependencies:
-
-```bash
 npm install
 ```
 
-Configure the API URL through the environment:
+Create `frontend/.env.local`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
 
-Start the development server:
+Start the frontend:
 
 ```bash
 npm run dev
 ```
 
-The frontend will be available at:
+Open `http://localhost:3000`.
 
-```text
-http://localhost:3000
+> `NEXT_PUBLIC_API_URL` is embedded into the frontend at build time. Rebuild and redeploy the frontend after changing this variable in a deployment environment.
+
+## Database
+
+The application uses DuckDB with a sample e-commerce dataset containing customers, products, orders, order items, regions, and states.
+
+Create or refresh the sample database:
+
+```bash
+python -m app.database.seed
 ```
 
----
+Default database path: `data/ecommerce.duckdb`. It can be changed with the `DATABASE_PATH` environment variable.
 
-# Testing
+The dataset is intended for demos, development, and portfolio evaluation. For a multi-user production workload, review persistence, concurrency, and database architecture requirements.
 
-The backend includes automated tests covering important parts of the system.
+## Tests
 
-Run the complete test suite:
+Run the backend test suite from the repository root with the virtual environment activated:
 
 ```bash
 pytest -v
 ```
 
-Tests cover areas including:
+Tests cover areas including analytics API behavior, SQL validation, query execution, self-correction, analysis, visualization/chart planning, and database functionality.
 
-* Analytics API
-* Self-correction
-* SQL validation
-* Query execution
-* Analysis generation
-* Visualization
-* Chart planning
-* Database functionality
+## Deployment on Render
 
----
+The repository includes a Render Blueprint (`render.yaml`) for the backend and frontend services.
 
-# Environment Variables
+Configure these environment variables in Render:
 
-## Backend
-
+**Backend (`sql-coder-api`)**
 ```env
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=your_gemini_api_key
 DATABASE_PATH=data/ecommerce.duckdb
+ALLOWED_ORIGINS=https://sql-coder-frontend.onrender.com
 ```
 
-## Frontend
+Set `GEMINI_API_KEY` as a secret. `ALLOWED_ORIGINS` should contain the exact frontend origin, without a trailing slash. Add any additional origins as comma-separated values if needed.
 
+**Frontend (`sql-coder-frontend`)**
 ```env
-NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_API_URL=https://sql-coder-api.onrender.com
 ```
 
-Never commit real API keys or credentials to the repository.
+Do not add a trailing slash to the API URL. Since the variable is embedded at build time, redeploy the frontend after changing it. The backend build process initializes the demo database using the seed command configured in `render.yaml`.
 
----
+## Security notes and limitations
 
-# Deployment
+- SQL generated by the LLM is validated before execution; the model is not the authority for database access.
+- Keep credentials in environment variables and out of version control.
+- The current demo is not a substitute for a production security review.
+- Query history is stored in browser local storage, not in a server-side user account.
+- The sample DuckDB database is intended for a portfolio demo rather than a high-concurrency, multi-user production workload.
+- Before using sensitive data, add the authentication, authorization, monitoring, privacy controls, and operational safeguards appropriate to that environment.
 
-The project is structured to be deployed as two Render Web Services:
+## Potential next steps
 
-```text
-                    Render
-                      │
-             ┌────────┴────────┐
-             │                 │
-             ▼                 ▼
-      sql-coder-api     sql-coder-frontend
-          FastAPI              Next.js
-             │                 │
-             └───────┬─────────┘
-                     │
-                     ▼
-                   User
-```
+Possible extensions include authentication and role-based access, PostgreSQL support, persistent user-specific history, query caching, streaming responses, more chart types, observability, and CI/CD.
 
-The repository contains a `render.yaml` Blueprint for configuring both services.
+## Project status
 
-The backend uses:
+The core portfolio workflow is implemented and deployed:
 
-```text
-Build:
-pip install -r requirements.txt
+**Natural-language question → SQL generation → validation → execution → correction when needed → business analysis → visualization → dashboard.**
 
-Start:
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
+## License
 
-The frontend uses:
-
-```text
-Build:
-npm ci && npm run build
-
-Start:
-npm start
-```
-
-The Render Blueprint also initializes the demo DuckDB database through the seed command before the backend starts.
-
----
-
-# Render Environment Variables
-
-The following values must be configured in Render.
-
-## Backend
-
-```text
-GEMINI_API_KEY
-```
-
-The API key must be added as a secret environment variable.
-
-## Frontend
-
-```text
-NEXT_PUBLIC_API_URL
-```
-
-Set this to the public URL of the deployed FastAPI backend.
-
-Example:
-
-```text
-https://sql-coder-api.onrender.com
-```
-
-The exact URL depends on the service name assigned by Render.
-
----
-
-# Important Deployment Note
-
-The project currently uses DuckDB as a local analytics database.
-
-This is ideal for:
-
-* Portfolio demonstrations
-* Prototypes
-* Technical demonstrations
-* Local development
-* Small analytical workloads
-
-For a production multi-user system, the database architecture should eventually be migrated to a persistent managed database such as PostgreSQL.
-
----
-
-# Security Considerations
-
-The analytics engine is designed around a read-only SQL execution model.
-
-Current protections include:
-
-* SELECT-only queries
-* SQL parsing
-* Multiple statement protection
-* Query length limits
-* Result size limits
-* Read-only database execution
-* Validation before execution
-
-The LLM is never trusted as the final authority over database execution.
-
-Generated SQL must pass through the application's validation and execution layers.
-
----
-
-# Future Improvements
-
-Potential future iterations include:
-
-* PostgreSQL support
-* Authentication
-* User accounts
-* Persistent query history
-* Advanced chart generation
-* Dashboard builder
-* Query caching
-* Streaming responses
-* Better natural-language error recovery
-* Multiple LLM providers
-* AI-generated dashboards
-* Role-based database permissions
-* Production observability
-* Automated CI/CD
-
----
-
-# Project Status
-
-The project currently provides a complete working prototype of an AI-powered analytics platform.
-
-The core pipeline is implemented:
-
-```text
-Natural Language
-       ↓
-Schema
-       ↓
-Gemini
-       ↓
-SQL
-       ↓
-SQL Validation
-       ↓
-DuckDB
-       ↓
-Self-Correction
-       ↓
-Business Analysis
-       ↓
-Visualization
-       ↓
-Next.js Dashboard
-```
-
----
-
-# License
-
-This project is intended as a technical portfolio and educational project.
+This repository is a technical portfolio and educational project. No specific open-source license is declared here; add a `LICENSE` file if you intend to distribute the project under a particular license.
