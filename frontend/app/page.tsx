@@ -1,6 +1,15 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type DataRow = Record<string, unknown>;
 
@@ -268,8 +277,6 @@ function ChartSection({
     return null;
   }
 
-  const maxValue = Math.max(...chartData.map((item) => item.value), 1);
-
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl sm:p-6">
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -283,50 +290,92 @@ function ChartSection({
           </h2>
         </div>
 
-        <span className="w-fit rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs text-slate-500">
+        <span className="w-fit rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs text-slate-400">
           {getFriendlyChartType(plan.chart_type)}
         </span>
       </div>
 
-      <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 sm:p-6">
-        <div className="flex h-72 items-end gap-2 overflow-x-auto pb-8 sm:gap-4">
-          {chartData.map((item, index) => {
-            const height = Math.max(
-              (item.value / maxValue) * 100,
-              4,
-            );
+      <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 sm:p-5">
+        <div className="h-[320px] w-full min-w-0 sm:h-[360px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 16, right: 12, left: 4, bottom: 56 }}
+              barCategoryGap="22%"
+            >
+              <CartesianGrid
+                stroke="#1e293b"
+                strokeDasharray="3 3"
+                vertical={false}
+              />
 
-            return (
-              <div
-                key={`${item.label}-${index}`}
-                className="group flex h-full min-w-16 flex-1 flex-col justify-end"
-              >
-                <div className="relative flex h-full items-end">
-                  <div
-                    className="w-full rounded-t-lg bg-slate-300 transition-all duration-500 group-hover:bg-white"
-                    style={{
-                      height: `${height}%`,
-                    }}
-                    title={`${item.label}: ${formatNumber(item.value)}`}
-                  />
-                </div>
+              <XAxis
+                dataKey="label"
+                axisLine={{ stroke: "#334155" }}
+                tickLine={false}
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                angle={chartData.length > 4 ? -25 : 0}
+                textAnchor={chartData.length > 4 ? "end" : "middle"}
+                interval={0}
+                height={chartData.length > 4 ? 72 : 36}
+                tickMargin={12}
+              />
 
-                <div className="mt-3 truncate text-center text-[11px] text-slate-500">
-                  {item.label}
-                </div>
-              </div>
-            );
-          })}
+              <YAxis
+                width={64}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                tickFormatter={(value) => formatNumber(value)}
+                domain={[0, "auto"]}
+                allowDecimals
+              />
+
+              <Tooltip
+                cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
+                contentStyle={{
+                  backgroundColor: "#0f172a",
+                  border: "1px solid #334155",
+                  borderRadius: "12px",
+                  color: "#f8fafc",
+                  fontSize: "12px",
+                }}
+                labelStyle={{
+                  color: "#e2e8f0",
+                  fontWeight: 600,
+                  marginBottom: "4px",
+                }}
+                formatter={(value) => [
+                  formatNumber(value),
+                  plan.y_axis || "Valor",
+                ]}
+              />
+
+              <Bar
+                dataKey="value"
+                name={plan.y_axis || "Valor"}
+                fill="#38bdf8"
+                radius={[6, 6, 0, 0]}
+                maxBarSize={56}
+                minPointSize={3}
+                isAnimationActive={false}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        <div className="mt-2 flex items-center justify-between border-t border-slate-800 pt-3 text-xs text-slate-600">
-          <span>{plan.x_axis || "Categoria"}</span>
-          <span>{plan.y_axis || "Valor"}</span>
+        <div className="mt-2 flex flex-col gap-1 border-t border-slate-800 pt-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            Eixo X: {plan.x_axis || "Categoria"}
+          </span>
+          <span>
+            Eixo Y: {plan.y_axis || "Valor"}
+          </span>
         </div>
       </div>
 
       {plan.reason && (
-        <p className="mt-4 text-xs leading-5 text-slate-600">
+        <p className="mt-4 text-xs leading-5 text-slate-500">
           {plan.reason}
         </p>
       )}
